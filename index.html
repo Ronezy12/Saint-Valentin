@@ -20,17 +20,6 @@
     }
     *{ box-sizing:border-box; }
     body{
-      <audio id="music" loop preload="auto">
-  <source src="music.mp3" type="audio/mpeg">
-</audio>
-
-<audio id="paper" preload="auto">
-  <source src="paper.mp3" type="audio/mpeg">
-</audio>
-
-<audio id="pop" preload="auto">
-  <source src="pop.mp3" type="audio/mpeg">
-</audio>
       margin:0;
       min-height:100vh;
       display:flex;
@@ -181,8 +170,8 @@
     .scene.drop{ transform: translateY(26px); }
 
     .card3d{
-      width:min(440px, 100%);
-      height: 300px;
+      width:min(460px, 100%);
+      height: 320px;
       position:relative;
       border-radius: 24px;
       border: 1px solid rgba(255,255,255,.14);
@@ -215,7 +204,7 @@
       100%{ transform: translateX(55%) rotate(10deg); opacity:.3}
     }
 
-    /* Cache (on ne voit pas le message au début) */
+    /* Voile (cache au début) */
     .veil{
       position:absolute; inset:0;
       display:grid;
@@ -251,18 +240,18 @@
       line-height:1.5;
     }
 
-    /* Message secret (apparaît) */
+    /* Message secret */
     .message{
       position:absolute;
       left:18px; right:18px;
       bottom:18px;
-      height: 220px;
+      height: 235px;
       border-radius: 18px;
       background: linear-gradient(180deg, var(--paper1), var(--paper2));
       color:#1a1030;
       border: 1px solid rgba(0,0,0,.10);
       padding: 16px 16px 44px;
-      transform: translateY(160px);
+      transform: translateY(175px);
       opacity:0;
       transition: transform 1.05s cubic-bezier(.2,.85,.2,1), opacity .8s ease;
       z-index:4;
@@ -284,12 +273,12 @@
     }
     .paperEdge b{ color: rgba(26,16,48,.86); }
 
-    /* “Sceau” */
+    /* Sceau */
     .seal{
       position:absolute;
       left:50%; top:55%;
       transform: translate(-50%,-50%);
-      width:72px; height:72px;
+      width:74px; height:74px;
       border-radius:50%;
       display:grid; place-items:center;
       background: radial-gradient(circle at 30% 30%, #ffd1e2, var(--accent) 60%, #b01048);
@@ -303,10 +292,7 @@
     .seal span{ font-size:28px; filter: drop-shadow(0 8px 10px rgba(0,0,0,.35)); }
 
     /* État ouvert */
-    .opened .message{
-      transform: translateY(-18px);
-      opacity:1;
-    }
+    .opened .message{ transform: translateY(-18px); opacity:1; }
     .opened .seal{
       transform: translate(-50%,-50%) scale(.86);
       opacity:.18;
@@ -360,7 +346,7 @@
       z-index:2;
     }
 
-    /* Coeurs flottants */
+    /* Coeurs */
     .heart{
       position:absolute;
       bottom:-40px;
@@ -379,6 +365,11 @@
 </head>
 
 <body>
+  <!-- Musique (mets ton fichier dans le repo en le renommant music.mp3) -->
+  <audio id="music" preload="auto" loop>
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+
   <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
 
   <div class="wrap">
@@ -387,7 +378,7 @@
 
       <h1>💌 Pour toi, <span id="prenom">Carla</span></h1>
       <p class="sub">
-        Clique sur <b>Démarrer</b> (pour activer le son), puis sur le sceau 💗.
+        Clique sur <b>Démarrer</b> (pour activer la musique), puis sur le sceau 💗.
       </p>
 
       <div class="ctaRow">
@@ -396,14 +387,13 @@
         <button class="mute" id="muteBtn" title="Son">🔊</button>
       </div>
 
-      <p class="tiny">Astuce : sur mobile, le son démarre seulement après un clic (c’est normal).</p>
+      <p class="tiny">Sur iPhone/Android, la musique démarre seulement après un clic (normal).</p>
     </section>
 
     <section class="panel scene" id="scene">
       <div class="card3d" id="card">
         <div class="shine"></div>
 
-        <!-- Voile (cache au début) -->
         <div class="veil" id="veil">
           <div class="veilBox">
             <p class="veilTitle">💌 Un message t’attend…</p>
@@ -411,12 +401,10 @@
           </div>
         </div>
 
-        <!-- Sceau cliquable -->
         <div class="seal" id="seal" aria-label="Ouvrir">
           <span>💗</span>
         </div>
 
-        <!-- Message secret -->
         <div class="message" id="message">
           <h2>Mon amour,</h2>
           <p id="messageText">...</p>
@@ -476,6 +464,8 @@ Joyeuse Saint-Valentin 💞`;
     const list = document.getElementById("list");
     const finalLine = document.getElementById("finalLine");
 
+    const music = document.getElementById("music");
+
     prenomEl.textContent = PRENOM;
     messageText.textContent = TEXTE;
 
@@ -486,53 +476,94 @@ Joyeuse Saint-Valentin 💞`;
       list.appendChild(li);
     });
     finalLine.textContent = LIGNE_FINALE;
-const music = document.getElementById("music");
-const paper = document.getElementById("paper");
-const popS  = document.getElementById("pop");
 
-// volume par défaut
-music.volume = 0.35;
+    // ====== MUSIQUE (MP3) ======
+    let muted = false;
+    let started = false;
 
-// Petite montée de volume (stylé)
-function fadeInMusic(){
-  music.volume = 0.0;
-  music.play().catch(()=>{});
-  let v = 0;
-  const t = setInterval(()=>{
-    v += 0.03;
-    music.volume = Math.min(0.35, v);
-    if(v >= 0.35) clearInterval(t);
-  }, 120);
-}
+    function fadeInMusic(target=0.35){
+      music.volume = 0.0;
+      const playPromise = music.play();
+      if (playPromise && playPromise.catch) playPromise.catch(()=>{});
+      let v = 0.0;
+      const step = 0.03;
+      const timer = setInterval(()=>{
+        if(muted){ clearInterval(timer); return; }
+        v += step;
+        music.volume = Math.min(target, v);
+        if(v >= target) clearInterval(timer);
+      }, 120);
+    }
 
-// Démarrage musique sur le bouton "Démarrer la carte"
-startBtn.addEventListener("click", () => {
-  fadeInMusic();
-});
+    function setMuted(v){
+      muted = v;
+      music.muted = muted;
+      muteBtn.textContent = muted ? "🔇" : "🔊";
+    }
 
-// Bruit papier quand tu “ouvres” (au clic du sceau ou ouverture)
-seal.addEventListener("click", () => {
-  paper.currentTime = 0;
-  paper.volume = 0.6;
-  paper.play().catch(()=>{});
-});
+    // ====== SFX (générés, pas besoin de fichiers) ======
+    let audioCtx = null;
+    let master = null;
 
-// Pop quand tu ouvres la surprise
-surpriseBtn.addEventListener("click", () => {
-  popS.currentTime = 0;
-  popS.volume = 0.55;
-  popS.play().catch(()=>{});
-});
+    function ensureSfx(){
+      if(audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      master = audioCtx.createGain();
+      master.gain.value = 0.8;
+      master.connect(audioCtx.destination);
+    }
 
-// Mute / unmute
-muteBtn.addEventListener("click", () => {
-  const muted = !music.muted;
-  music.muted = muted;
-  paper.muted = muted;
-  popS.muted  = muted;
-  muteBtn.textContent = muted ? "🔇" : "🔊";
-});
+    async function resumeSfx(){
+      ensureSfx();
+      try{
+        if(audioCtx.state === "suspended") await audioCtx.resume();
+      }catch(e){}
+    }
 
+    function pop(){
+      if(!audioCtx || muted) return;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(520, audioCtx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(260, audioCtx.currentTime + 0.10);
+
+      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.35, audioCtx.currentTime + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.14);
+
+      o.connect(g); g.connect(master);
+      o.start();
+      o.stop(audioCtx.currentTime + 0.16);
+    }
+
+    function paper(){
+      if(!audioCtx || muted) return;
+      const bufferSize = 2 * audioCtx.sampleRate;
+      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) output[i] = (Math.random() * 2 - 1);
+
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = noiseBuffer;
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = 1200;
+      filter.Q.value = 0.8;
+
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.22);
+
+      noise.connect(filter);
+      filter.connect(g);
+      g.connect(master);
+
+      noise.start();
+      noise.stop(audioCtx.currentTime + 0.25);
+    }
 
     // ====== FX visuels ======
     function hearts(n=18){
@@ -552,38 +583,37 @@ muteBtn.addEventListener("click", () => {
     }
 
     // ====== INTERACTIONS ======
-    let started = false;
     let opened = false;
 
     startBtn.addEventListener("click", async () => {
-      ensureAudio();
-      try { if(audioCtx.state === "suspended") await audioCtx.resume(); } catch(e){}
       started = true;
-
-      // petit feedback sonore + musique
+      await resumeSfx();
       pop();
-      startMusic();
+
+      // musique mp3 (obligatoire après un clic)
+      music.loop = true;
+      setMuted(false);
+      fadeInMusic(0.35);
 
       startBtn.textContent = "Carte démarrée ✅";
       startBtn.disabled = true;
-
       hearts(14);
     });
 
     seal.addEventListener("click", async () => {
       if(!started){
         // si elle clique direct sur le sceau : on démarre quand même
-        ensureAudio();
-        try { if(audioCtx.state === "suspended") await audioCtx.resume(); } catch(e){}
         started = true;
-        startMusic();
+        await resumeSfx();
+        pop();
+        setMuted(false);
+        fadeInMusic(0.35);
         startBtn.textContent = "Carte démarrée ✅";
         startBtn.disabled = true;
       }
       if(opened) return;
       opened = true;
 
-      // scène descend, puis message sort
       scene.classList.add("drop");
       paper();
       setTimeout(()=> {
@@ -595,7 +625,8 @@ muteBtn.addEventListener("click", () => {
       }, 280);
     });
 
-    surpriseBtn.addEventListener("click", () => {
+    surpriseBtn.addEventListener("click", async () => {
+      await resumeSfx();
       pop();
       hearts(30);
       modal.classList.add("show");
@@ -604,14 +635,16 @@ muteBtn.addEventListener("click", () => {
     closeBtn.addEventListener("click", () => modal.classList.remove("show"));
     modal.addEventListener("click", (e)=>{ if(e.target === modal) modal.classList.remove("show"); });
 
-    muteBtn.addEventListener("click", () => {
-      ensureAudio();
+    muteBtn.addEventListener("click", async () => {
+      await resumeSfx();
       setMuted(!muted);
-      if(!muted && started && musicOn) startMusic();
-      if(muted) stopMusic();
+      if(!muted && (started || opened)){
+        // relance si nécessaire
+        const p = music.play();
+        if (p && p.catch) p.catch(()=>{});
+      }
     });
 
-    // petits coeurs au chargement
     setTimeout(()=>hearts(10), 650);
   </script>
 </body>
